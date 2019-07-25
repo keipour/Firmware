@@ -87,5 +87,6 @@
         "workbench.editor.enablePreviewFromQuickOpen": false,
         "workbench.editor.highlightModifiedTabs": true,
         "workbench.settings.enableNaturalLanguageSearch": false,
-        "workbench.statusBar.feedback.visible": false
+        "workbench.statusBar.feedback.visible": false,
+        "C_Cpp.exclusionPolicy": "checkFilesAndFolders"
 }

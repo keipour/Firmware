@@ -48,6 +48,7 @@
 #include <px4_time.h>
 #include <uORB/topics/actuator_armed.h>
 #include <uORB/topics/actuator_controls.h>
+#include <uORB/topics/actuator_controls_status.h>
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/parameter_update.h>
 
@@ -111,8 +112,10 @@ private:
 	int		_armed_sub{-1};
 
 	actuator_outputs_s _actuator_outputs = {};
+	actuator_controls_status_s _actuator_controls_status = {};
 	orb_advert_t	_outputs_pub{nullptr};
 	orb_advert_t	_mixer_status{nullptr};
+	orb_advert_t	_actuator_controls_status_pub{nullptr};
 
 	unsigned	_num_outputs{0};
 

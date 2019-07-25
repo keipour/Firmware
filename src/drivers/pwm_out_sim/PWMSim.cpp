@@ -36,8 +36,6 @@
 #include <px4_time.h>
 #include <mathlib/mathlib.h>
 
-#include <uORB/topics/multirotor_motor_limits.h>
-
 PWMSim::PWMSim() :
 	CDev(PWM_OUTPUT0_DEVICE_PATH),
 	_perf_control_latency(perf_alloc(PC_ELAPSED, "pwm_out_sim control latency"))
@@ -163,6 +161,7 @@ PWMSim::run()
 
 	/* advertise the mixed control outputs, insist on the first group output */
 	_outputs_pub = orb_advertise(ORB_ID(actuator_outputs), &_actuator_outputs);
+ 	_actuator_controls_status_pub = orb_advertise(ORB_ID(actuator_controls_status), &_actuator_controls_status);
 
 	update_params();
 	int params_sub = orb_subscribe(ORB_ID(parameter_update));
@@ -285,17 +284,28 @@ PWMSim::run()
 			saturation_status.value = _mixers->get_saturation_status();
 
 			if (saturation_status.flags.valid) {
-				multirotor_motor_limits_s motor_limits;
-				motor_limits.timestamp = hrt_absolute_time();
-				motor_limits.saturation_status = saturation_status.value;
+				_actuator_controls_status.timestamp = hrt_absolute_time();
+				_actuator_controls_status.saturation_status = saturation_status.value;
+
 
 				int instance;
-				orb_publish_auto(ORB_ID(multirotor_motor_limits), &_mixer_status, &motor_limits, &instance, ORB_PRIO_DEFAULT);
+				orb_publish_auto(ORB_ID(actuator_controls_status), &_actuator_controls_status_pub, &_actuator_controls_status, &instance, ORB_PRIO_DEFAULT);
 			}
 
 			/* and publish for anyone that cares to see */
 			_actuator_outputs.timestamp = hrt_absolute_time();
 			orb_publish(ORB_ID(actuator_outputs), _outputs_pub, &_actuator_outputs);
+
+			/* publish mixer status */
+			saturation_status.value = _mixers->get_saturation_status();
+
+			if (saturation_status.flags.valid) {
+				_actuator_controls_status.timestamp = hrt_absolute_time();
+				_actuator_controls_status.saturation_status = saturation_status.value;
+
+				orb_publish(ORB_ID(actuator_controls_status), _actuator_controls_status_pub, &_actuator_controls_status);
+			}
+
 
 			// use first valid timestamp_sample for latency tracking
 			for (int i = 0; i < actuator_controls_s::NUM_ACTUATOR_CONTROL_GROUPS; i++) {

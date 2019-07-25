@@ -115,6 +115,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	_rates_sp.zero();
 	_rates_int.zero();
 	_thrust_sp = 0.0f;
+	_thrust_3d_sp.zero();
 	_att_control.zero();
 
 	/* initialize thermal corrections as we might not immediately get a topic update (only non-zero values) */
@@ -268,17 +269,17 @@ MulticopterAttitudeControl::vehicle_status_poll()
 }
 
 void
-MulticopterAttitudeControl::vehicle_motor_limits_poll()
+MulticopterAttitudeControl::actuator_controls_status_poll()
 {
 	/* check if there is a new message */
 	bool updated;
-	orb_check(_motor_limits_sub, &updated);
+	orb_check(_actuator_controls_status_sub, &updated);
 
 	if (updated) {
-		multirotor_motor_limits_s motor_limits = {};
-		orb_copy(ORB_ID(multirotor_motor_limits), _motor_limits_sub, &motor_limits);
+		actuator_controls_status_s actuator_controls_status = {};
+		orb_copy(ORB_ID(actuator_controls_status), _actuator_controls_status_sub, &actuator_controls_status);
 
-		_saturation_status.value = motor_limits.saturation_status;
+		_saturation_status.value = actuator_controls_status.saturation_status;
 	}
 }
 
@@ -500,7 +501,12 @@ MulticopterAttitudeControl::generate_attitude_setpoint(float dt, bool reset_yaw_
 	q_sp.copyTo(attitude_setpoint.q_d);
 	attitude_setpoint.q_d_valid = true;
 
+	// TODO: Make the setpoint 3D more correct taking into account the angles etc.
+	// Interpret manual thrust control as upward thrust
 	attitude_setpoint.thrust_body[2] = -throttle_curve(_manual_control_sp.z);
+	attitude_setpoint.thrust_body[0] = 0.f;
+	attitude_setpoint.thrust_body[1] = 0.f;
+
 	attitude_setpoint.timestamp = hrt_absolute_time();
 	if (_attitude_sp_id != nullptr) {
 		orb_publish_auto(_attitude_sp_id, &_vehicle_attitude_setpoint_pub, &attitude_setpoint, nullptr, ORB_PRIO_DEFAULT);
@@ -514,7 +520,7 @@ MulticopterAttitudeControl::generate_attitude_setpoint(float dt, bool reset_yaw_
 /**
  * Attitude controller.
  * Input: 'vehicle_attitude_setpoint' topics (depending on mode)
- * Output: '_rates_sp' vector, '_thrust_sp'
+ * Output: '_rates_sp' vector, '_thrust_sp', '_thrust_3d_sp' vector
  */
 void
 MulticopterAttitudeControl::control_attitude()
@@ -527,8 +533,13 @@ MulticopterAttitudeControl::control_attitude()
 		Vector3f().copyTo(_v_att_sp.thrust_body);
 	}
 
-	// physical thrust axis is the negative of body z axis
-	_thrust_sp = -_v_att_sp.thrust_body[2];
+	// Use 3d thrust
+	_thrust_3d_sp(0) = _v_att_sp.thrust_body[0];
+	_thrust_3d_sp(1) = _v_att_sp.thrust_body[1];
+	_thrust_3d_sp(2) = _v_att_sp.thrust_body[2];
+
+	// physical thrust axis is negative
+	_thrust_sp = -_thrust_3d_sp.length();
 
 	_rates_sp = _attitude_control.update(Quatf(_v_att.q), Quatf(_v_att_sp.q_d), _v_att_sp.yaw_sp_move_rate);
 }
@@ -676,9 +687,9 @@ MulticopterAttitudeControl::publish_rates_setpoint()
 	_v_rates_sp.roll = _rates_sp(0);
 	_v_rates_sp.pitch = _rates_sp(1);
 	_v_rates_sp.yaw = _rates_sp(2);
-	_v_rates_sp.thrust_body[0] = 0.0f;
-	_v_rates_sp.thrust_body[1] = 0.0f;
-	_v_rates_sp.thrust_body[2] = -_thrust_sp;
+	_v_rates_sp.thrust_body[0] = _thrust_3d_sp(0);
+	_v_rates_sp.thrust_body[1] = _thrust_3d_sp(1);
+	_v_rates_sp.thrust_body[2] = _thrust_3d_sp(2);
 	_v_rates_sp.timestamp = hrt_absolute_time();
 	orb_publish_auto(ORB_ID(vehicle_rates_setpoint), &_v_rates_sp_pub, &_v_rates_sp, nullptr, ORB_PRIO_DEFAULT);
 }
@@ -700,11 +711,14 @@ MulticopterAttitudeControl::publish_rate_controller_status()
 void
 MulticopterAttitudeControl::publish_actuator_controls()
 {
-	_actuators.control[0] = (PX4_ISFINITE(_att_control(0))) ? _att_control(0) : 0.0f;
-	_actuators.control[1] = (PX4_ISFINITE(_att_control(1))) ? _att_control(1) : 0.0f;
-	_actuators.control[2] = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
-	_actuators.control[3] = (PX4_ISFINITE(_thrust_sp)) ? _thrust_sp : 0.0f;
-	_actuators.control[7] = (float)_landing_gear.landing_gear;
+	_actuators.control[actuator_controls_s::INDEX_ROLL]     = (PX4_ISFINITE(_att_control(0))) ? _att_control(0) : 0.0f;
+	_actuators.control[actuator_controls_s::INDEX_PITCH]    = (PX4_ISFINITE(_att_control(1))) ? _att_control(1) : 0.0f;
+	_actuators.control[actuator_controls_s::INDEX_YAW]      = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
+	_actuators.control[actuator_controls_s::INDEX_THROTTLE] = (PX4_ISFINITE(_thrust_sp)) ? _thrust_sp : 0.0f;
+	_actuators.control[actuator_controls_s::INDEX_X_THRUST] = (PX4_ISFINITE(_thrust_3d_sp(0))) ? _thrust_3d_sp(0) : 0.0f;
+	_actuators.control[actuator_controls_s::INDEX_Y_THRUST] = (PX4_ISFINITE(_thrust_3d_sp(1))) ? _thrust_3d_sp(1) : 0.0f;
+	_actuators.control[actuator_controls_s::INDEX_Z_THRUST] = (PX4_ISFINITE(_thrust_3d_sp(2))) ? _thrust_3d_sp(2) : 0.0f;
+	_actuators.control[actuator_controls_s::INDEX_LANDING_GEAR] = _landing_gear.landing_gear;
 	_actuators.timestamp = hrt_absolute_time();
 	_actuators.timestamp_sample = _sensor_gyro.timestamp;
 
@@ -734,7 +748,7 @@ MulticopterAttitudeControl::run()
 	_params_sub = orb_subscribe(ORB_ID(parameter_update));
 	_manual_control_sp_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 	_vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
-	_motor_limits_sub = orb_subscribe(ORB_ID(multirotor_motor_limits));
+	_actuator_controls_status_sub = orb_subscribe(ORB_ID(actuator_controls_status));
 	_battery_status_sub = orb_subscribe(ORB_ID(battery_status));
 
 	_gyro_count = math::constrain(orb_group_count(ORB_ID(sensor_gyro)), 1, MAX_GYRO_COUNT);
@@ -806,7 +820,7 @@ MulticopterAttitudeControl::run()
 			/* check for updates in other topics */
 			vehicle_control_mode_poll();
 			vehicle_status_poll();
-			vehicle_motor_limits_poll();
+			actuator_controls_status_poll();
 			battery_status_poll();
 			sensor_bias_poll();
 			vehicle_land_detected_poll();
@@ -859,7 +873,12 @@ MulticopterAttitudeControl::run()
 								math::superexpo(-_manual_control_sp.x, _param_mc_acro_expo.get(), _param_mc_acro_supexpo.get()),
 								math::superexpo(_manual_control_sp.r, _param_mc_acro_expo_y.get(), _param_mc_acro_supexpoy.get()));
 						_rates_sp = man_rate_sp.emult(_acro_rate_max);
+
+						// Interpret manual thrust control as upward thrust
 						_thrust_sp = _manual_control_sp.z;
+						_thrust_3d_sp(0) = 0.0f;
+						_thrust_3d_sp(1) = 0.0f;
+						_thrust_3d_sp(2) = - _thrust_sp;
 						publish_rates_setpoint();
 					}
 
@@ -869,7 +888,10 @@ MulticopterAttitudeControl::run()
 						_rates_sp(0) = _v_rates_sp.roll;
 						_rates_sp(1) = _v_rates_sp.pitch;
 						_rates_sp(2) = _v_rates_sp.yaw;
-						_thrust_sp = -_v_rates_sp.thrust_body[2];
+						_thrust_3d_sp(0) = _v_rates_sp.thrust_body[0];
+						_thrust_3d_sp(1) = _v_rates_sp.thrust_body[1];
+						_thrust_3d_sp(2) = _v_rates_sp.thrust_body[2];
+						_thrust_sp = -_thrust_3d_sp.length();
 					}
 				}
 			}
@@ -879,6 +901,7 @@ MulticopterAttitudeControl::run()
 					_rates_sp.zero();
 					_rates_int.zero();
 					_thrust_sp = 0.0f;
+					_thrust_3d_sp.zero();
 					_att_control.zero();
 					publish_actuator_controls();
 				}
@@ -921,7 +944,7 @@ MulticopterAttitudeControl::run()
 	orb_unsubscribe(_params_sub);
 	orb_unsubscribe(_manual_control_sp_sub);
 	orb_unsubscribe(_vehicle_status_sub);
-	orb_unsubscribe(_motor_limits_sub);
+	orb_unsubscribe(_actuator_controls_status_sub);
 	orb_unsubscribe(_battery_status_sub);
 
 	for (unsigned s = 0; s < _gyro_count; s++) {

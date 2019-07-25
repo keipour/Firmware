@@ -54,12 +54,14 @@
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/actuator_controls_status.h>
 #include <uORB/topics/vehicle_trajectory_waypoint.h>
 #include <uORB/topics/landing_gear.h>
 
 #include <float.h>
 #include <mathlib/mathlib.h>
 #include <systemlib/mavlink_log.h>
+#include <lib/mixer/mixer.h>
 
 #include <controllib/blocks.hpp>
 
@@ -115,6 +117,7 @@ private:
 	int		_vehicle_status_sub{-1};		/**< vehicle status subscription */
 	int		_vehicle_land_detected_sub{-1};	/**< vehicle land detected subscription */
 	int		_control_mode_sub{-1};		/**< vehicle control mode subscription */
+ 	int		_actuator_controls_status_sub{-1};		/**< actuator controls status subscription */
 	int		_params_sub{-1};			/**< notification of parameter updates */
 	int		_local_pos_sub{-1};			/**< vehicle local position */
 	int		_att_sub{-1};				/**< vehicle attitude */
@@ -139,6 +142,7 @@ private:
 	home_position_s	_home_pos{};			/**< home position */
 	landing_gear_s _landing_gear{};
 	int8_t _old_landing_gear_position{landing_gear_s::GEAR_KEEP};
+	MultirotorMixer::saturation_status _saturation_status{};
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::MPC_TKO_RAMP_T>) _param_mpc_tko_ramp_t, /**< time constant for smooth takeoff ramp */
@@ -411,6 +415,15 @@ MulticopterPositionControl::poll_subscriptions()
 		orb_copy(ORB_ID(vehicle_control_mode), _control_mode_sub, &_control_mode);
 	}
 
+ 	orb_check(_actuator_controls_status_sub, &updated);
+
+	if (updated) {
+		actuator_controls_status_s actuator_controls_status = {};
+		orb_copy(ORB_ID(actuator_controls_status), _actuator_controls_status_sub, &actuator_controls_status);
+
+		_saturation_status.value = actuator_controls_status.saturation_status;
+	}
+
 	orb_check(_att_sub, &updated);
 
 	if (updated) {
@@ -531,6 +544,7 @@ MulticopterPositionControl::run()
 	_vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 	_vehicle_land_detected_sub = orb_subscribe(ORB_ID(vehicle_land_detected));
 	_control_mode_sub = orb_subscribe(ORB_ID(vehicle_control_mode));
+ 	_actuator_controls_status_sub = orb_subscribe(ORB_ID(actuator_controls_status));
 	_params_sub = orb_subscribe(ORB_ID(parameter_update));
 	_att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
 	_home_pos_sub = orb_subscribe(ORB_ID(home_position));
@@ -755,6 +769,8 @@ MulticopterPositionControl::run()
 			matrix::Quatf q_sp = matrix::Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body);
 			q_sp.copyTo(_att_sp.q_d);
 			_att_sp.q_d_valid = true;
+			_att_sp.thrust_body[0] = 0.0f;
+			_att_sp.thrust_body[1] = 0.0f;
 			_att_sp.thrust_body[2] = 0.0f;
 		}
 	}
@@ -762,6 +778,7 @@ MulticopterPositionControl::run()
 	orb_unsubscribe(_vehicle_status_sub);
 	orb_unsubscribe(_vehicle_land_detected_sub);
 	orb_unsubscribe(_control_mode_sub);
+	orb_unsubscribe(_actuator_controls_status_sub);
 	orb_unsubscribe(_params_sub);
 	orb_unsubscribe(_local_pos_sub);
 	orb_unsubscribe(_att_sub);

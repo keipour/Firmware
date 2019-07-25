@@ -664,7 +664,7 @@ void Logger::add_default_topics()
 	add_topic("actuator_controls_virtual_mc");
 	add_topic("fw_virtual_attitude_setpoint");
 	add_topic("mc_virtual_attitude_setpoint");
-	add_topic("multirotor_motor_limits");
+	add_topic("actuator_controls_status");
 	add_topic("position_controller_status");
 	add_topic("offboard_control_mode");
 	add_topic("time_offset");

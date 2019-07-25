@@ -44,7 +44,7 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/manual_control_setpoint.h>
-#include <uORB/topics/multirotor_motor_limits.h>
+#include <uORB/topics/actuator_controls_status.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/rate_ctrl_status.h>
 #include <uORB/topics/sensor_bias.h>
@@ -110,7 +110,7 @@ private:
 	void		vehicle_attitude_setpoint_poll();
 	void		vehicle_control_mode_poll();
 	bool		vehicle_manual_poll();
-	void		vehicle_motor_limits_poll();
+	void		actuator_controls_status_poll();
 	bool		vehicle_rates_setpoint_poll();
 	void		vehicle_status_poll();
 	void 		landing_gear_state_poll();
@@ -157,7 +157,7 @@ private:
 	int		_params_sub{-1};		/**< parameter updates subscription */
 	int		_manual_control_sp_sub{-1};	/**< manual control setpoint subscription */
 	int		_vehicle_status_sub{-1};	/**< vehicle status subscription */
-	int		_motor_limits_sub{-1};		/**< motor limits subscription */
+	int		_actuator_controls_status_sub{-1};		/**< actuator controls status subscription */
 	int		_battery_status_sub{-1};	/**< battery status subscription */
 	int		_sensor_gyro_sub[MAX_GYRO_COUNT];	/**< gyro data subscription */
 	int		_sensor_correction_sub{-1};	/**< sensor thermal correction subscription */
@@ -207,7 +207,8 @@ private:
 	matrix::Vector3f _rates_int;			/**< angular rates integral error */
 
 	matrix::Vector3f _att_control;			/**< attitude control vector */
-	float		_thrust_sp{0.0f};		/**< thrust setpoint */
+	float		 _thrust_sp{0.0f};		/**< thrust setpoint */
+ 	matrix::Vector3f _thrust_3d_sp;			/**< thrust 3D setpoint */
 
 	matrix::Dcmf _board_rotation;			/**< rotation matrix for the orientation that the board is mounted */
 

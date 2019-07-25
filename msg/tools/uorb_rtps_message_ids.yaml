@@ -98,7 +98,7 @@ rtps:
     id: 40
   - msg: mount_orientation
     id: 41
-  - msg: multirotor_motor_limit
+  - msg: actuator_controls_status
     id: 42
   - msg: obstacle_distance
     id: 43
