@@ -451,8 +451,9 @@ MultirotorMixer::update_saturation_status(unsigned index, bool clipping_high, bo
 			_saturation_status.flags.yaw_neg = true;
 		}
 
-		// A positive change in thrust will increase saturation
-		_saturation_status.flags.thrust_pos = true;
+		// A negative change in Z thrust will increase saturation
+		_saturation_status.flags.z_thrust_neg = true;
+
 	}
 
 	// The motor is saturated at the lower limit
@@ -478,8 +479,8 @@ MultirotorMixer::update_saturation_status(unsigned index, bool clipping_high, bo
 			_saturation_status.flags.pitch_pos = true;
 		}
 
-		// A negative change in thrust will increase saturation
-		_saturation_status.flags.thrust_neg = true;
+		// A positive change in Z thrust will increase saturation
+		_saturation_status.flags.z_thrust_pos = true;
 	}
 
 	if (clipping_low_yaw) {
@@ -493,6 +494,12 @@ MultirotorMixer::update_saturation_status(unsigned index, bool clipping_high, bo
 			_saturation_status.flags.yaw_pos = true;
 		}
 	}
+
+	// X and Y thrusts are not controlled
+	_saturation_status.flags.x_thrust_pos = true;
+	_saturation_status.flags.x_thrust_neg = true;
+	_saturation_status.flags.y_thrust_pos = true;
+	_saturation_status.flags.y_thrust_neg = true;
 
 	_saturation_status.flags.valid = true;
 }
