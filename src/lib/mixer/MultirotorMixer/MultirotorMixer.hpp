@@ -434,7 +434,8 @@ private:
 	 * thrust is increased/decreased as much as required to meet the demanded roll/pitch.
 	 * Yaw is not allowed to increase the thrust, @see mix_yaw() for the exact behavior.
 	 */
-	inline void mix_airmode_rp(float roll, float pitch, float yaw, float x_thrust, float y_thrust, float z_thrust, float *outputs);
+	inline void mix_airmode_rp(float roll, float pitch, float yaw, float x_thrust, float y_thrust, float z_thrust,
+				   float *outputs);
 
 	/**
 	 * Mix roll, pitch, yaw, thrust and set the outputs vector.
@@ -443,7 +444,8 @@ private:
 	 * thrust is increased/decreased as much as required to meet demanded the roll/pitch/yaw,
 	 * while giving priority to roll and pitch over yaw.
 	 */
-	inline void mix_airmode_rpy(float roll, float pitch, float yaw, float x_thrust, float y_thrust, float z_thrust, float *outputs);
+	inline void mix_airmode_rpy(float roll, float pitch, float yaw, float x_thrust, float y_thrust, float z_thrust,
+				    float *outputs);
 
 	/**
 	 * Mix roll, pitch, yaw, thrust and set the outputs vector.
@@ -453,7 +455,8 @@ private:
 	 * Thrust can be reduced to unsaturate the upper side.
 	 * @see mix_yaw() for the exact yaw behavior.
 	 */
-	inline void mix_airmode_disabled(float roll, float pitch, float yaw, float x_thrust, float y_thrust, float z_thrust, float *outputs);
+	inline void mix_airmode_disabled(float roll, float pitch, float yaw, float x_thrust, float y_thrust, float z_thrust,
+					 float *outputs);
 
 	/**
 	 * Mix yaw by updating an existing output vector (that already contains roll/pitch/thrust).
