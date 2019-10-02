@@ -44,10 +44,16 @@ using namespace matrix;
 
 namespace ControlMath
 {
-void thrustToAttitude(const Vector3f &thr_sp, const float yaw_sp, vehicle_attitude_setpoint_s &att_sp)
+void thrustToAttitude(const Vector3f &thr_sp, const float yaw_sp, vehicle_attitude_setpoint_s &att_sp, const bool omni)
 {
-	bodyzToAttitude(-thr_sp, yaw_sp, att_sp);
+	bodyzToAttitude(-thr_sp, yaw_sp, att_sp, omni);
 	att_sp.thrust_body[2] = -thr_sp.length();
+
+	if (omni == true) {
+		att_sp.thrust_body[0] = thr_sp(0);
+		att_sp.thrust_body[1] = thr_sp(1);
+		att_sp.thrust_body[2] = thr_sp(2);
+	}
 }
 
 void limitTilt(Vector3f &body_unit, const Vector3f &world_unit, const float max_angle)
@@ -67,7 +73,7 @@ void limitTilt(Vector3f &body_unit, const Vector3f &world_unit, const float max_
 	body_unit = cosf(angle) * world_unit + sinf(angle) * rejection.unit();
 }
 
-void bodyzToAttitude(Vector3f body_z, const float yaw_sp, vehicle_attitude_setpoint_s &att_sp)
+void bodyzToAttitude(Vector3f body_z, const float yaw_sp, vehicle_attitude_setpoint_s &att_sp, const bool omni)
 {
 	// zero vector, no direction, set safe level value
 	if (body_z.norm_squared() < FLT_EPSILON) {
@@ -117,6 +123,19 @@ void bodyzToAttitude(Vector3f body_z, const float yaw_sp, vehicle_attitude_setpo
 	att_sp.roll_body = euler.phi();
 	att_sp.pitch_body = euler.theta();
 	att_sp.yaw_body = euler.psi();
+
+	if (omni == true) {
+		// Define attitude and thrust for the omni-directional vehicles
+		Eulerf omni_euler;
+		omni_euler(0) = 0;
+		omni_euler(1) = 0;
+		omni_euler(2) = att_sp.yaw_body;
+		//Quatf omni_q_sp = omni_euler;
+		//omni_q_sp.copyTo(att_sp.q_d);
+
+		att_sp.roll_body = omni_euler(0);
+		att_sp.pitch_body = omni_euler(1);
+	}
 }
 
 Vector2f constrainXY(const Vector2f &v0, const Vector2f &v1, const float &max)
