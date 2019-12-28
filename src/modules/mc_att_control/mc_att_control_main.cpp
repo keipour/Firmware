@@ -212,41 +212,40 @@ MulticopterAttitudeControl::generate_attitude_setpoint(const Quatf &q, float dt,
 
 	attitude_setpoint.thrust_body[2] = -throttle_curve(_manual_control_setpoint.z);
 
-	///////// Added for Omni ////////////////
-	// set the euler angles, for logging only, must not be used for control
-	attitude_setpoint.roll_body = 0;
-	attitude_setpoint.pitch_body = 0;
+	/* modify roll/pitch if we're in omni-directional mode */
+	if (_param_mc_omni_mode.get() == 2) {
+		// set the euler angles, for logging only, must not be used for control
+		attitude_setpoint.roll_body = 0;
+		attitude_setpoint.pitch_body = 0;
+		attitude_setpoint.yaw_body = _man_yaw_sp;
 
-	Quatf q_sp_omni = Eulerf(attitude_setpoint.roll_body, attitude_setpoint.pitch_body, attitude_setpoint.yaw_body);
-	q_sp_omni.copyTo(attitude_setpoint.q_d);
+		Quatf q_sp_omni = Eulerf(attitude_setpoint.roll_body, attitude_setpoint.pitch_body, attitude_setpoint.yaw_body);
+		q_sp_omni.copyTo(attitude_setpoint.q_d);
 
-	float x_thrust = _manual_control_setpoint.x;
-	float y_thrust = _manual_control_setpoint.y;
-	float z_thrust = _manual_control_setpoint.z;
+		float x_thrust = _manual_control_setpoint.x;
+		float y_thrust = _manual_control_setpoint.y;
+		float z_thrust = _manual_control_setpoint.z;
 
-	// Check if the total horizontal thrust has exceeded the maximum
-	Vector2f h_thrust = Vector2f(x_thrust, y_thrust);
-	float h_thrust_norm = h_thrust.norm();
+		// Check if the total horizontal thrust has exceeded the maximum
+		Vector2f h_thrust = Vector2f(x_thrust, y_thrust);
+		float h_thrust_norm = h_thrust.norm();
 
-	if (h_thrust_norm > 1.0F) {
-		h_thrust /= h_thrust_norm;
+		if (h_thrust_norm > 1.0F) {
+			h_thrust /= h_thrust_norm;
+		}
+
+		const float max_xy_thrust_ratio = 0.3;
+		h_thrust *= max_xy_thrust_ratio;
+
+		// Check if the total thrust has exceeded the maximum
+		Vector3f total_thrust = Vector3f(h_thrust(0), h_thrust(1), z_thrust);
+
+		total_thrust = total_thrust / total_thrust.norm() * z_thrust;
+
+		attitude_setpoint.thrust_body[0] = throttle_curve(math::abs_t(total_thrust(0))) * matrix::sign(total_thrust(0));
+		attitude_setpoint.thrust_body[1] = throttle_curve(math::abs_t(total_thrust(1))) * matrix::sign(total_thrust(1));
+		attitude_setpoint.thrust_body[2] = -throttle_curve(total_thrust(2));
 	}
-
-	const float max_xy_thrust_ratio = 0.3;
-	h_thrust *= max_xy_thrust_ratio;
-
-	// Check if the total thrust has exceeded the maximum
-	Vector3f total_thrust = Vector3f(h_thrust(0), h_thrust(1), z_thrust);
-	float total_thrust_norm = total_thrust.norm();
-
-	if (total_thrust_norm > 1.0F) {
-		total_thrust /= total_thrust_norm;
-	}
-
-	attitude_setpoint.thrust_body[0] = throttle_curve(total_thrust(0));
-	attitude_setpoint.thrust_body[1] = throttle_curve(total_thrust(1));
-	attitude_setpoint.thrust_body[2] = -throttle_curve(total_thrust(2));
-	///////// End of added for omni /////////////
 
 	attitude_setpoint.timestamp = hrt_absolute_time();
 

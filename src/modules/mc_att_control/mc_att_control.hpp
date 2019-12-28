@@ -157,7 +157,9 @@ private:
 		(ParamInt<px4::params::MPC_THR_CURVE>) _param_mpc_thr_curve,				/**< throttle curve behavior */
 
 		(ParamInt<px4::params::MC_AIRMODE>) _param_mc_airmode,
-		(ParamFloat<px4::params::MC_MAN_TILT_TAU>) _param_mc_man_tilt_tau
+		(ParamFloat<px4::params::MC_MAN_TILT_TAU>) _param_mc_man_tilt_tau,
+
+		(ParamInt<px4::params::MC_OMNI_MODE>) _param_mc_omni_mode
 	)
 };
 
