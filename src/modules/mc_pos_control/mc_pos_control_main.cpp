@@ -682,7 +682,7 @@ MulticopterPositionControl::Run()
 
 			vehicle_attitude_setpoint_s attitude_setpoint{};
 			attitude_setpoint.timestamp = time_stamp_now;
-			_control.getAttitudeSetpoint(attitude_setpoint);
+			_control.getAttitudeSetpoint(_param_mc_omni_mode.get(), attitude_setpoint);
 
 			// publish attitude setpoint
 			// It's important to publish also when disarmed otheriwse the attitude setpoint stays uninitialized.
