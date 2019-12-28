@@ -20,6 +20,8 @@ then
 	param set PWM_RATE 400
 
 	param set GPS_UBX_DYNMODEL 6
+
+	param set MC_OMNI_MODE 0
 fi
 
 #

@@ -225,7 +225,6 @@ MulticopterAttitudeControl::generate_attitude_setpoint(float dt, bool reset_yaw_
 
 	Quatf q_sp_omni = Eulerf(attitude_setpoint.roll_body, attitude_setpoint.pitch_body, attitude_setpoint.yaw_body);
 	q_sp_omni.copyTo(attitude_setpoint.q_d);
-	attitude_setpoint.q_d_valid = true;
 
 	float x_thrust = _manual_control_sp.x;
 	float y_thrust = _manual_control_sp.y;
