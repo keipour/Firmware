@@ -176,7 +176,7 @@ private:
 		(ParamFloat<px4::params::MPC_TILTMAX_LND>) _param_mpc_tiltmax_lnd, /**< maximum tilt for landing and smooth takeoff */
 		(ParamFloat<px4::params::MPC_THR_MIN>) _param_mpc_thr_min,
 		(ParamFloat<px4::params::MPC_THR_MAX>) _param_mpc_thr_max,
-		(ParamInt<px4::params::MC_OMNI_MODE>) _param_mc_omni_mode
+		(ParamInt<px4::params::OMNI_ATT_MODE>) _param_omni_att_mode
 	);
 
 	control::BlockDerivative _vel_x_deriv; /**< velocity derivative in x */
@@ -682,7 +682,7 @@ MulticopterPositionControl::Run()
 
 			vehicle_attitude_setpoint_s attitude_setpoint{};
 			attitude_setpoint.timestamp = time_stamp_now;
-			_control.getAttitudeSetpoint(_param_mc_omni_mode.get(), attitude_setpoint);
+			_control.getAttitudeSetpoint(_param_omni_att_mode.get(), attitude_setpoint);
 
 			// publish attitude setpoint
 			// It's important to publish also when disarmed otheriwse the attitude setpoint stays uninitialized.
