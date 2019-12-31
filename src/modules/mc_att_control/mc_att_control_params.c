@@ -189,4 +189,4 @@ PARAM_DEFINE_FLOAT(MC_MAN_TILT_TAU, 0.0f);
  * @decimal 2
  * @group Multicopter Attitude Control
  */
-PARAM_DEFINE_FLOAT(OMNI_MAX_HOR_THR, 0.3f);
+PARAM_DEFINE_FLOAT(OMNI_MAX_HOR_THR, 0.15f);
