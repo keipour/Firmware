@@ -242,7 +242,6 @@ void thrustToMinTiltAttitude(const Vector3f &thr_sp, const float yaw_sp, const f
 	// copy quaternion setpoint to attitude setpoint topic
 	Quatf q_sp = R_sp;
 	q_sp.copyTo(att_sp.q_d);
-	att_sp.q_d_valid = true;
 
 	// calculate euler angles, for logging only, must not be used for control
 	Eulerf euler = R_sp;
