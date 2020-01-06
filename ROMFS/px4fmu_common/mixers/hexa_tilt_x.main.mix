@@ -1,4 +1,3 @@
 # Hexarotor with tilted arms
 
-# R: 6xt 10000 10000 10000 0
-S: 6xt 10000 10000 10000 10000 10000 10000 0
+S: 6xt
