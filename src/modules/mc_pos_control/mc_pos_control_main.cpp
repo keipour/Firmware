@@ -146,8 +146,11 @@ private:
 	home_position_s	_home_pos{};			/**< home position */
 	landing_gear_s _landing_gear{};
 	int8_t _old_landing_gear_position{landing_gear_s::GEAR_KEEP};
+
 	float _param_tilt_angle = 0, _param_tilt_dir = 0; // Keeping the last parameter values in degrees
 	float _tilt_angle = 0, _tilt_dir = 0; // Keeping the currently used values in radians
+	float _param_roll_angle = 0, _param_pitch_angle = 0; // Keeping the last parameter values in degrees
+	float _tilt_roll = 0, _tilt_pitch = 0; // Keeping the currently used values in radians
 
 	DEFINE_PARAMETERS(
 		// Position Control
@@ -412,6 +415,14 @@ MulticopterPositionControl::parameters_update(bool force)
 			_param_tilt_dir = _param_omni_att_tilt_dir.get();
 			_tilt_angle = math::radians(_param_tilt_angle);
 			_tilt_dir = math::radians(_param_tilt_dir);
+		}
+
+		if (abs(_param_omni_att_roll.get() - _param_roll_angle) > FLT_EPSILON
+		    || abs(_param_omni_att_pitch.get() - _param_pitch_angle) > FLT_EPSILON) {
+			_param_roll_angle = _param_omni_att_roll.get();
+			_param_pitch_angle = _param_omni_att_pitch.get();
+			_tilt_roll = math::radians(_param_roll_angle);
+			_tilt_pitch = math::radians(_param_pitch_angle);
 		}
 	}
 
@@ -703,10 +714,8 @@ MulticopterPositionControl::Run()
 
 			vehicle_attitude_setpoint_s attitude_setpoint{};
 			attitude_setpoint.timestamp = time_stamp_now;
-			float omni_att_roll = _param_omni_att_roll.get();
-			float omni_att_pitch = _param_omni_att_pitch.get();
 			_control.getAttitudeSetpoint(matrix::Quatf(att.q), _param_omni_att_mode.get(), _param_omni_dfc_max_thr.get(),
-						     _tilt_angle, _tilt_dir, omni_att_roll, omni_att_pitch, _param_omni_proj_axes.get(), attitude_setpoint);
+						     _tilt_angle, _tilt_dir, _tilt_roll, _tilt_pitch, _param_omni_proj_axes.get(), attitude_setpoint);
 
 			// publish attitude setpoint
 			// It's important to publish also when disarmed otheriwse the attitude setpoint stays uninitialized.
