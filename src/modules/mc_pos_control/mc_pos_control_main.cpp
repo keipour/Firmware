@@ -191,7 +191,8 @@ private:
 		(ParamFloat<px4::params::OMNI_ATT_TLT_DIR>) _param_omni_att_tilt_dir,
 		(ParamFloat<px4::params::OMNI_ATT_ROLL>) _param_omni_att_roll,
 		(ParamFloat<px4::params::OMNI_ATT_PITCH>) _param_omni_att_pitch,
-		(ParamInt<px4::params::OMNI_PROJ_AXES>) _param_omni_proj_axes
+		(ParamInt<px4::params::OMNI_PROJ_AXES>) _param_omni_proj_axes,
+		(ParamFloat<px4::params::OMNI_ATT_RATE>) _param_omni_att_rate
 	);
 
 	control::BlockDerivative _vel_x_deriv; /**< velocity derivative in x */
@@ -715,7 +716,8 @@ MulticopterPositionControl::Run()
 			vehicle_attitude_setpoint_s attitude_setpoint{};
 			attitude_setpoint.timestamp = time_stamp_now;
 			_control.getAttitudeSetpoint(matrix::Quatf(att.q), _param_omni_att_mode.get(), _param_omni_dfc_max_thr.get(),
-						     _tilt_angle, _tilt_dir, _tilt_roll, _tilt_pitch, _param_omni_proj_axes.get(), attitude_setpoint);
+						     _tilt_angle, _tilt_dir, _tilt_roll, _tilt_pitch, _param_omni_att_rate.get(), _param_omni_proj_axes.get(),
+						     attitude_setpoint);
 
 			// publish attitude setpoint
 			// It's important to publish also when disarmed otheriwse the attitude setpoint stays uninitialized.
