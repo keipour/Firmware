@@ -88,7 +88,7 @@ void PositionControl::setInputSetpoint(const vehicle_local_position_setpoint_s &
 	_yawspeed_sp = setpoint.yawspeed;
 }
 
-void PositionControl::setConstraints(const vehicle_constraints_s &constraints)
+void PositionControl::setConstraints(const vehicle_constraints_s &constraints, const float lim_thr_hor_max)
 {
 	_constraints = constraints;
 
@@ -105,6 +105,8 @@ void PositionControl::setConstraints(const vehicle_constraints_s &constraints)
 	if (!PX4_ISFINITE(constraints.speed_down) || (constraints.speed_down > _lim_vel_down)) {
 		_constraints.speed_down = _lim_vel_down;
 	}
+
+	_lim_thr_hor_max = lim_thr_hor_max;
 
 	// ignore _constraints.speed_xy TODO: remove it completely as soon as no task uses it anymore to avoid confusion
 }
@@ -165,6 +167,7 @@ void PositionControl::_velocityControl(const float dt)
 	const float thrust_max_squared = _lim_thr_max * _lim_thr_max;
 	const float thrust_z_squared = _thr_sp(2) * _thr_sp(2);
 	float thrust_max_xy = sqrtf(thrust_max_squared - thrust_z_squared);
+	thrust_max_xy = math::min(_lim_thr_hor_max, thrust_max_xy);
 
 	// Saturate thrust in horizontal direction
 	const Vector2f thrust_sp_xy(_thr_sp);
