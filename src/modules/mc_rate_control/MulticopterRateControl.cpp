@@ -244,7 +244,8 @@ MulticopterRateControl::Run()
 				_rates_sp(2) = v_rates_sp.yaw;
 				_thrust_sp(0) = v_rates_sp.thrust_body[0];
 				_thrust_sp(1) = v_rates_sp.thrust_body[1];
-				_thrust_sp(2) = v_rates_sp.thrust_body[2];			}
+				_thrust_sp(2) = v_rates_sp.thrust_body[2];
+			}
 		}
 
 		// run the rate controller

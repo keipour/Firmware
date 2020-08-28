@@ -85,7 +85,8 @@ MultirotorMixer::MultirotorMixer(ControlCallback control_cb, uintptr_t cb_handle
 	_is_6dof = false;
 }
 
-MultirotorMixer::MultirotorMixer(ControlCallback control_cb, uintptr_t cb_handle, MultirotorGeometry geometry, bool is_6dof) :
+MultirotorMixer::MultirotorMixer(ControlCallback control_cb, uintptr_t cb_handle, MultirotorGeometry geometry,
+				 bool is_6dof) :
 	MultirotorMixer(control_cb, cb_handle, _config_index_6dof[(int)geometry], _config_rotor_count[(int)geometry])
 {
 	_is_6dof = true;
@@ -173,10 +174,12 @@ MultirotorMixer::from_text(Mixer::ControlCallback control_cb, uintptr_t cb_handl
 
 	debug("adding multirotor mixer '%s'", geomname);
 
-	if (is_6dof)
+	if (is_6dof) {
 		return new MultirotorMixer(control_cb, cb_handle, geometry, is_6dof);
-	else
+
+	} else {
 		return new MultirotorMixer(control_cb, cb_handle, geometry);
+	}
 }
 
 float
